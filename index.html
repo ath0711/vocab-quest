@@ -15,7 +15,7 @@
   .sub{text-align:center;color:var(--mut);margin-bottom:18px}
   .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:16px}
   label{display:block;font-weight:600;margin:10px 0 6px}
-  input[type=text],select{width:100%;padding:12px;border-radius:10px;border:2px solid #334155;background:#0b1222;color:var(--ink);font-size:1rem}
+  select{width:100%;padding:12px;border-radius:10px;border:2px solid #334155;background:#0b1222;color:var(--ink);font-size:1rem}
   input[type=text]:focus,select:focus{outline:none;border-color:var(--acc)}
   .dayBadge{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,#0369a1,#1e293b);border-radius:16px;padding:16px 20px;margin-bottom:16px}
   .dayBadge .n{font-size:2.4rem;font-weight:900;line-height:1}
@@ -75,10 +75,10 @@
       <div style="flex:1;max-width:220px"><div id="progTxt" style="font-size:.9rem;color:#e0f2fe"></div><div class="prog"><i id="progBar"></i></div></div>
     </div>
     <div class="card">
-      <label for="nama">Name / Nama</label>
-      <input type="text" id="nama" maxlength="60" autocomplete="off" placeholder="Full name">
       <label for="kelas">Class / Kelas</label>
-      <input type="text" id="kelas" maxlength="20" autocomplete="off" placeholder="e.g. XI IPA 1">
+      <select id="kelas"><option value="">— Choose your class / Pilih kelas —</option></select>
+      <label for="nama">Name / Nama</label>
+      <select id="nama" disabled><option value="">— Choose class first —</option></select>
       <label for="daySel">Which day? / Hari ke berapa?</label>
       <select id="daySel"></select>
       <ul class="rules">
@@ -264,8 +264,48 @@ function buildQuestions(day){
 /* ---------- Flow ---------- */
 let DAY=1, Q=[], qi=0, correct=0, points=0, streak=0, bestStreak=0, leaves=0, playing=false, away=false, locked=false;
 let tStart=0, tick=null, events=[], wrong=[], submitted=false, attempt=1, fsSupported=false;
-const nameOk = () => $("nama").value.trim().length>=2 && $("kelas").value.trim().length>=1;
-$("nama").oninput = $("kelas").oninput = () => $("startBtn").disabled = !nameOk();
+/* Students: class -> names. Must match the Rekap sheet exactly. */
+const STUDENTS = {
+ "Al Halim": [
+  "Azhar Basysyar Makkawang",
+  "Dini Mauliana W. Hermanto",
+  "Khoiria Nadiva",
+  "M. Wahyu",
+  "Muh. Ripal"
+ ],
+ "XI Al Hafidz": [
+  "Aisyah Ali",
+  "Amelia",
+  "Muh. Fathin Faris",
+  "Muhammad Fajar",
+  "Syaiful"
+ ],
+ "XI Al Hamid": [
+  "Andi Isra Alya Al Fattah",
+  "Abid Ahmad zaky",
+  "Fauzan Azima Ahmad"
+ ],
+ "XI Al Hasiib": [
+  "Diah Ayu Fitriah Jamal",
+  "Fauziyah Ibrahim",
+  "Haerul Azzam",
+  "Muhammad Abi Abdillah",
+  "Quinsha Malika Ridzkyllah",
+  "Muh. Fatir Afrian"
+ ]
+};
+const kSel = $("kelas"), nSel = $("nama");
+Object.keys(STUDENTS).forEach(k=>{ const o=document.createElement("option"); o.value=k; o.textContent=k; kSel.appendChild(o); });
+function fillNames(){
+  nSel.innerHTML = '<option value="">— Choose your name / Pilih nama —</option>';
+  (STUDENTS[kSel.value]||[]).forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; nSel.appendChild(o); });
+  nSel.disabled = !kSel.value;
+}
+const nameOk = () => !!(kSel.value && nSel.value);
+kSel.onchange = () => { fillNames(); $("startBtn").disabled = !nameOk(); };
+nSel.onchange = () => { $("startBtn").disabled = !nameOk(); try{ localStorage.setItem("vq500_me", JSON.stringify([kSel.value,nSel.value])); }catch(e){} };
+try{ const me = JSON.parse(localStorage.getItem("vq500_me")||"null");
+  if(me && STUDENTS[me[0]] && STUDENTS[me[0]].includes(me[1])){ kSel.value=me[0]; fillNames(); nSel.value=me[1]; $("startBtn").disabled=false; } }catch(e){}
 
 $("startBtn").onclick = () => {
   if(!nameOk()) return;
